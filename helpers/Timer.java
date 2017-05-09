@@ -11,6 +11,7 @@ import org.lwjgl.glfw.GLFW;
 
 //TODO: toString? or print func
 //TODO: FIX TIMER!
+
 public class Timer {
 	
 	public static final float NANOS = 100000000;

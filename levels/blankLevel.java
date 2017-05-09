@@ -2,6 +2,8 @@ package levels;
 
 import java.util.Stack;
 
+import org.lwjgl.glfw.GLFW;
+
 import entities.AbstractLevel;
 import entities.AbstractWorld;
 import topLevelEntities.Point;
@@ -18,6 +20,16 @@ public class blankLevel extends AbstractLevel {
 
 	@Override
 	public void handleInput(Stack<Integer> stack) {
+		while (!stack.empty()) {
+			switch (stack.pop()) {
+			case GLFW.GLFW_KEY_P:
+				world.getGlobals().printVars();
+				break;
+
+			default:
+				break;
+			}
+		}
 	}
 
 	@Override

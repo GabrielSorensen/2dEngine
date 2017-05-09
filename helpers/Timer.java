@@ -9,7 +9,8 @@ import org.lwjgl.glfw.GLFW;
  *https://sourceforge.net/p/java-game-lib/mailman/message/29029484/
  */
 
-
+//TODO: toString? or print func
+//TODO: FIX TIMER!
 public class Timer {
 	
 	public static final float NANOS = 100000000;
@@ -19,7 +20,7 @@ public class Timer {
 	private double overSleep;
 	private double sleepTime;
 	private double t;
-	private double timerFreq = GLFW.glfwGetTimerFrequency() / 1000; //decrease by 1000 becasuse threads dont measure that fast.
+	private double timerFreq = GLFW.glfwGetTimerFrequency() / 1; //decrease by 1000 becasuse threads dont measure that fast.
 	private double variableYieldTime;
 	private double yieldTime;
 	private double delta;
@@ -52,6 +53,7 @@ public class Timer {
 		this.variableYieldTime = 0l;
 		lastFrame = getTime();
 		String freq = ("Timer res:" + timerFreq);
+		//as of when this was working the timer resolution was: 2016/09/03 12:00:40, Timer res:2727.0
 		Logging.log(freq, true, Logging.LOG_LEVEL.ERROR);
 //		java.util.Timer timer = new java.util.Timer(true);
 //		

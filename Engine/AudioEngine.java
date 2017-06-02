@@ -36,12 +36,9 @@ public class AudioEngine {
 	private class AudioData {
 
 		protected IntBuffer buffer = BufferUtils.createIntBuffer(1);
-		//protected 
 		protected ByteBuffer data = null;
 
-		public AudioData() {
-			
-		}
+		public AudioData() {}
 
 		public void deleteBuffer() {
 			AL10.alDeleteBuffers(buffer);
@@ -53,6 +50,7 @@ public class AudioEngine {
 	private long AUDIOCALLBACK = 0l;
 
 	private long AUDIODEVICE = 0l;
+	private GLOBALS globals;
 	// Sound data
 	ArrayList<AudioData> buffers = new ArrayList<>();
 
@@ -66,41 +64,54 @@ public class AudioEngine {
 
 	FloatBuffer sourceVelocity = BufferUtils.createFloatBuffer(3).put(new float[] {0f, 0f, 0f});
 
-	public AudioEngine() {
+	public AudioEngine(GLOBALS globals) {
+		this.globals = globals;
 		setup();
 	}
-	
+
+	public void setSourcePosition(float x, float y, float z) {
+		sourcePosition.put(new float[] {x, y, z});
+	}
+
 	/*
 	 * @params: path: the file to be loaded into the available buffers
 	 * @return: returns the index of the placed buffer for callback.
 	 */
-	public int addBuffer(String path) throws IOException {
-		int index = -1;
-		AudioData audio = getAudioData(path);
-		if (!buffers.contains(audio)) {
-			buffers.add(audio);
-			index = buffers.indexOf(audio);
+	public int addBuffer(String path) {
+		try {
+			int index = -1;
+			AudioData audio = getAudioData(path);
+			if (!buffers.contains(audio)) {
+				buffers.add(audio);
+				index = buffers.indexOf(audio);
+			}
+			if (ALC10.alcGetError(AUDIOCALLBACK) == ALC10.ALC_NO_ERROR) {
+				return index;
+			}
+			throw new IOException("Could not load "+path+", into a buffer.");
+		} catch (IOException io) {
+			helpers.Logging.logError(io, globals.DEBUG);
+			return -1;
 		}
-		if (ALC10.alcGetError(AUDIOCALLBACK) == ALC10.ALC_NO_ERROR) {
-			return index;
-		}
-		throw new IOException("Could not load "+path+", into a buffer.");
 	}
-	
-	public void cleanup() {
-		for (int i=0; i<sources.size(); i++) {
-			AL10.alDeleteSources(sources.get(i));
-		}
-		for (int i=0; i<buffers.size(); i++) {
-			//AL10.alDeleteBuffers(buffers.get(i));
-			//but because this data is packed in the audioData wrapper we call the method to do this
-			buffers.get(i).deleteBuffer();
-		}
-		ALC.destroy();
-		AUDIOCALLBACK = 0l;
-		buffers = null;
-		sources = null;
-		return;
+
+	public void pauseSource(int bufferNumber) {
+		AL10.alSourcePause(bufferNumber);
+	}
+
+	public void playSource(int bufferNumber) {
+		AL10.alSourcePlayv(sources.get(bufferNumber));
+	}
+
+
+	public void stopSource(int bufferNumber) {
+		AL10.alSourceStop(bufferNumber);
+	}
+
+	void setListenerValues() {
+		AL10.alListenerfv(AL10.AL_POSITION,    listenerPosition);
+		AL10.alListenerfv(AL10.AL_VELOCITY,    listenerVelocity);
+		AL10.alListenerfv(AL10.AL_ORIENTATION, listenerOrientation);
 	}
 
 	public AudioData getAudioData(String path) {
@@ -125,16 +136,19 @@ public class AudioEngine {
 				int numBytesRead = 0;
 				int numFramesRead = 0;
 				// Try to read numBytes bytes from the file.
-				while ((numBytesRead = 
-						audioInputStream.read(audioBytes)) != -1) {
+				while ((numBytesRead = audioInputStream.read(audioBytes)) != -1) {
 					// Calculate the number of frames actually read.
 					numFramesRead = numBytesRead / bytesPerFrame;
 					totalFramesRead += numFramesRead;
 					// Here, do something useful with the audio data that's 
 					// now in the audioBytes array...
-					AudioData audio = new AudioData();
-					//return ByteBuffer.wrap(audioBytes);
 				}
+				AudioData audio = new AudioData();
+				audio.data = ByteBuffer.allocate(1024 * audioBytes.length);
+				audio.data.put(audioBytes);
+				audio.data.flip();
+				audio.data.rewind();
+				//The audio data should now be in the byteBuffer inside the AudioData class
 			} catch (Exception ex) { 
 				// Handle the error...
 			}
@@ -144,9 +158,42 @@ public class AudioEngine {
 		return null;
 	}
 
+	private void setup() {
+		try {
+			new Thread().start();
+			//I am not 100% sure why this throws an error,
+			//hoever, this will not work without it.
+			ALC.create();
+			AUDIODEVICE = ALC10.alcOpenDevice((ByteBuffer)null);
+			/**
+			 *This is some meta shit.
+			 *note that alcOpenDevice opens a device for audio rendering using hardware implementations
+			 *the method is overloaded to accept either a bytebuffer for the device specifier
+			 *OR, to accept a charsequence at the name (a char sequence is a null terminated string like C)
+			 *passing NULL here tells the method to select whatever device is ready and willing
+			 *!!!!BUT!!!! as of java 7/8? the method must be identifiable from the signature
+			 *this includes the strong typing of the parameters, and since null is every type.
+			 *We cast the null to be a specific object to call which method we want, which doesnt matter
+			 */
+			//AUDIODEVICE = ALC10.alcOpenDevice((CharSequence)null); // would also work. 
+
+			AUDIOCALLBACK = ALC10.nalcCreateContext(AUDIODEVICE, 0l); //nalcCreateContext might be a spelling error...
+			AUDIOCALLBACK = ALC10.alcGetCurrentContext();
+
+			ALCCapabilities ca = ALC.createCapabilities(AUDIODEVICE);
+			AL.createCapabilities(ca);
+
+			ALC10.alcGetError(AUDIOCALLBACK);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+
 	private int loadALData() {
 		// Load wav data into a buffer.
-		
+
 		//AL10.alGenBuffers(buffer);
 
 		if(AL10.alGetError() != AL10.AL_NO_ERROR)
@@ -178,11 +225,11 @@ public class AudioEngine {
 		if (AL10.alGetError() != AL10.AL_NO_ERROR)
 			return AL10.AL_FALSE;
 
-//		AL10.alSourcei(source.get(0), AL10.AL_BUFFER,   buffer.get(0) );
-//		AL10.alSourcef(source.get(0), AL10.AL_PITCH,    1.0f          );
-//		AL10.alSourcef(source.get(0), AL10.AL_GAIN,     1.0f          );
-//		AL10.alSource (source.get(0), AL10.AL_POSITION, sourcePos     );
-//		AL10.alSource (source.get(0), AL10.AL_VELOCITY, sourceVel     );
+		//		AL10.alSourcei(source.get(0), AL10.AL_BUFFER,   buffer.get(0) );
+		//		AL10.alSourcef(source.get(0), AL10.AL_PITCH,    1.0f          );
+		//		AL10.alSourcef(source.get(0), AL10.AL_GAIN,     1.0f          );
+		//		AL10.alSource (source.get(0), AL10.AL_POSITION, sourcePos     );
+		//		AL10.alSource (source.get(0), AL10.AL_VELOCITY, sourceVel     );
 
 		// Do another error check and return.
 		if (AL10.alGetError() == AL10.AL_NO_ERROR)
@@ -191,51 +238,19 @@ public class AudioEngine {
 		return AL10.AL_FALSE;
 	}
 
-	public void pauseSources(int bufferPosition) {
-		AL10.alSourcePause(bufferPosition);
-	}
-
-	public void playSource(int bufferPosition) {
-		AL10.alSourcePlayv(sources.get(bufferPosition));
-	}
-
-	
-	void setListenerValues() {
-		AL10.alListenerfv(AL10.AL_POSITION,    listenerPosition);
-		AL10.alListenerfv(AL10.AL_VELOCITY,    listenerVelocity);
-		AL10.alListenerfv(AL10.AL_ORIENTATION, listenerOrientation);
-	}
-
-	private void setup() {
-		try {
-			new Thread().start();
-			ALC.create();
-			AUDIODEVICE = ALC10.alcOpenDevice((ByteBuffer)null);
-			//This is some meta shit.
-			//note that alcOpenDevice opens a device for audio rendering using hardware implementations
-			//the method is overloaded to accept either a bytebuffer for the device specifier
-			//OR, to accept a charsequence at the name (a char sequence is a null terminated string like C)
-			//passing NULL here tells the method to select whatever device is ready and willing
-			//!!!!BUT!!!! as of java 7/8? the method must be identifiable from the signature
-			// this includes the strong typing of the parameters, and since null is every type.
-			//We cast the null to be a specific object to call which method we want, which doesnt matter
-			//AUDIODEVICE = ALC10.alcOpenDevice((CharSequence)null); // would also work. 
-			
-			AUDIOCALLBACK = ALC10.nalcCreateContext(AUDIODEVICE, 0l); //nalcCreateContext might be a spelling error...
-			AUDIOCALLBACK = ALC10.alcGetCurrentContext();
-			
-			ALCCapabilities ca = ALC.createCapabilities(AUDIODEVICE);
-			AL.createCapabilities(ca);
-			
-			ALC10.alcGetError(AUDIOCALLBACK);
-
-		} catch (Exception e) {
-			e.printStackTrace();
+	public void cleanup() {
+		for (int i=0; i<sources.size(); i++) {
+			AL10.alDeleteSources(sources.get(i));
 		}
-	}
-
-
-	public void stopSource(int bufferPosition) {
-		AL10.alSourceStop(bufferPosition);
+		for (int i=0; i<buffers.size(); i++) {
+			//AL10.alDeleteBuffers(buffers.get(i));
+			//but because this data is packed in the audioData wrapper we call the method to do this
+			buffers.get(i).deleteBuffer();
+		}
+		ALC.destroy();
+		AUDIOCALLBACK = 0l;
+		buffers = null;
+		sources = null;
+		return;
 	}
 }

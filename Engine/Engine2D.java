@@ -12,7 +12,7 @@
 /**
  * TODO:(LIST)Main Engine suff that needs to be done
  * 1. OpenAL threaded responder
- * 2. Better Imputs?
+ * 2. Better Imputs?  //DONE: Inputs are handed to levels unsing a stack
  * 3. Fullscreen / video modes
  * 4. ???
  * 5. Profit.
@@ -71,71 +71,26 @@ public class Engine2D {
 	private boolean running = true; // this is a manual stop to the main loop. Use only when necessary.
 	java.util.Timer timer;
 
-	private void doThingsWithInputs() {
-
-		if (KeyboardHandler.isKeyDown(GLFW.GLFW_KEY_R)) {
-			reset();
-		}
-//		if (KeyboardHandler.isKeyDown(GLFW.GLFW_KEY_M)) {
-//			System.out.println("Stack: "+KeyboardHandler.getInputs()+", TOP: "+KeyboardHandler.getInputs().peek());
-//		}
-//		if (KeyboardHandler.isKeyDown(GLFW.GLFW_KEY_S)) {
-//			currentWorld.startWorld();
-//		}
-//
-//		if (KeyboardHandler.isKeyDown(GLFW.GLFW_KEY_P)) {
-//			globals.printVars();
-//		}
-//		if (KeyboardHandler.isKeyDown(GLFW.GLFW_KEY_O)) {
-//			currentWorld.getCurrentLevel().printAllEntities();
-//		}	
-//		if (KeyboardHandler.isKeyDown(GLFW.GLFW_KEY_UP)) {
-//			for (int i = 0; i < currentWorld.getCurrentLevel().getAllLayers().size(); i++) {
-//				ArrayList<Entity> Layer = currentWorld.getCurrentLevel().getAllLayers().get(i);
-//				for (int j = 0; j < Layer.size(); j++) {
-//					if (Layer.get(j)instanceof Point) {
-//						Point p = (Point) Layer.get(j);
-//						p.setAlpha(p.getAlpha()+0.01f * globals.delta);
-//					}
-//				}
-//			}
-//		}
-//		if (KeyboardHandler.isKeyDown(GLFW.GLFW_KEY_DOWN)) {
-//			for (int i = 0; i < currentWorld.getCurrentLevel().getAllLayers().size(); i++) {
-//				ArrayList<Entity> Layer = currentWorld.getCurrentLevel().getAllLayers().get(i);
-//				for (int j = 0; j < Layer.size(); j++) {
-//					if (Layer.get(j)instanceof Point) {
-//						Point p = (Point) Layer.get(j);
-//						p.setAlpha(p.getAlpha()-0.01f * globals.delta);
-//					}
-//				}
-//			}
-//		}
-
-	}
-
-	private void logic(double delta){
-		currentWorld.getCurrentLevel().update(delta);
-	}
-
 	private void loop() {
 		// start when the thread is created and print the fps every second from this thread.
 		while ( !glfwWindowShouldClose(globals.WINDOW_HANDLE)) {
 			if (!running) {
 				break;
 			}
+			if (globals.DEBUG) {
+				//System.out.println("Delta Current Frame: "+globals.delta);
+			}
 			globals.fps.incrementAndGet();
 			globals.delta = globals.timer.getDelta();
-
+			
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
 			glfwPollEvents();
 			// this should wait our thread enough to be nice to the processor
 			currentWorld.getCurrentLevel().handleInput(KeyboardHandler.getInputs());
 			globals.timer.sync(globals.TICK_LIMIT, Thread.currentThread(), true);
-			doThingsWithInputs();
 			globals.delta = globals.timer.getDelta();
-			logic(globals.delta);
-			render();
+			currentWorld.getCurrentLevel().update(globals.delta);
+			currentWorld.getCurrentLevel().render(globals.graphicsContext);
 
 			glfwSwapBuffers(globals.WINDOW_HANDLE); // swap the frame buffers
 
@@ -143,20 +98,8 @@ public class Engine2D {
 		}
 	}
 
-	private void render(){
-		currentWorld.getCurrentLevel().render(globals.graphicsContext);
-	}
-
-	private void reset() {
-		try {
-			System.out.println("RESET!");
-		} catch (Exception e) {
-			Logging.logError(e, globals.DEBUG);
-		} 
-	}
-
 	private void setupAudioEngine() {
-		globals.audioEngine = new AudioEngine();
+		globals.audioEngine = new AudioEngine(globals);
 	}
 
 	private void setupDisplayInput(String windowTitle) {

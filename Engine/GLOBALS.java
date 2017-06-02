@@ -32,13 +32,15 @@ public class GLOBALS implements Serializable {
 	}
 	
 	
-	protected int SCALE= 1;
+	protected double SCALE= 1;
+	//TODO:Width and Height by graphics capabilities, 
+	//or by selecting a ratio [4/3 16/9 etc.] and scaling?
 	public boolean DEBUG = true;
 	
 	private static final long serialVersionUID = 86753091L;
-	protected final int HEIGHT= 480*SCALE;
+	protected final int HEIGHT= (int)(480*SCALE);
 	protected final boolean VULKAN_SUPPORTED = glfwVulkanSupported();
-	protected final int WIDTH= 640*SCALE;
+	protected final int WIDTH= (int)(640*SCALE);
 	
 	public transient AudioEngine audioEngine;
 	protected transient double delta = 0;
@@ -57,17 +59,6 @@ public class GLOBALS implements Serializable {
 	
 	protected VSYNC_SETTING use_vsync = VSYNC_SETTING.OFF;
 	
-	/**
-	 * Because the Timer is janky af,
-	 * Some useful Numbers:
-	 * For actual ticks per second use the modified number
-	 * Target ticks/sec = actual selected rate
-	 *  60 = 45
-	 *  75 = 56
-	 * 100 = 75
-	 * 120 = 90
-	 * 144 = 108
-	 */
 	protected int TICK_LIMIT = 60;
 
 	//protected String logString = ""; 

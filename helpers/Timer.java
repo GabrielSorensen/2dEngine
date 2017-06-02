@@ -21,7 +21,7 @@ public class Timer {
 	private double overSleep;
 	private double sleepTime;
 	private double t;
-	private double timerFreq = GLFW.glfwGetTimerFrequency() / 1; //decrease by 1000 becasuse threads dont measure that fast.
+	private double timerFreq = 1+(double)GLFW.glfwGetTimerFrequency(); //decrease by 1000 becasuse threads dont measure that fast.
 	private double variableYieldTime;
 	private double yieldTime;
 	private double delta;
@@ -42,7 +42,7 @@ public class Timer {
 	
 	public double getTime() {
 		//System.err.println("Got Time: "+ GLFW.glfwGetTime() * NANOS / timerFreq);
-		return (GLFW.glfwGetTime() / timerFreq); // get time in ticks per second
+		return (GLFW.glfwGetTime()); // get time in ticks per second
 		//return (Sys.getTime() * 1000) / Sys.getTimerResolution();
 		//glfwGetTimerFrequency();
 	}
@@ -52,6 +52,7 @@ public class Timer {
 		this.lastTime = 0l;
 		GLFW.glfwSetTime(1);
 		this.variableYieldTime = 0l;
+		//this.timerFreq = GLFW.glfwGetTimerFrequency(); // set this in instantiation of class
 		lastFrame = getTime();
 		String freq = ("Timer res:" + timerFreq);
 		//as of when this was working the timer resolution was: 2016/09/03 12:00:40, Timer res:2727.0
@@ -84,21 +85,8 @@ public class Timer {
 	 * 
 	 * So, after many hours and expert opinions, I have found a solution
 	 * This basically works.
-	 * HOWEVER!
-	 * it syncs to about 10-20% more ticks than selected for.
-	 * This is still useful though. and it works so I will leave it.
 	 * 
-	 * Some useful Numbers:
-	 * For actual ticks per second use the modified number
-	 * Target ticks/sec = actual selected rate
-	 *  60 = 45
-	 *  75 = 56
-	 * 100 = 75
-	 * 120 = 90
-	 * 144 = 108
 	 * 
-	 * If anyone finds a relation between these, or just my math error,
-	 * I would be so happy.
 	 * @param ticksPerSecond
 	 * @param thread
 	 * @param DEBUG
@@ -107,7 +95,7 @@ public class Timer {
 	public void sync(int ticksPerSecond, Thread thread, boolean DEBUG) {
 		setDelta();
 		if (ticksPerSecond <= 0) return;
-		sleepTime = (timerFreq / ticksPerSecond) / 10000000;
+		sleepTime = (timerFreq / (long)ticksPerSecond)  ;
 		yieldTime = Math.min(sleepTime, variableYieldTime + sleepTime % 1000); 
 		overSleep = 0; 
 		if (sleepTime == 0) return;

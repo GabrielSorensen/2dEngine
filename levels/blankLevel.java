@@ -22,6 +22,7 @@ public class blankLevel extends AbstractLevel {
 	public void handleInput(Stack<Integer> stack) {
 		while (!stack.empty()) {
 			switch (stack.pop()) {
+
 			case GLFW.GLFW_KEY_P:
 				world.getGlobals().printVars();
 				break;

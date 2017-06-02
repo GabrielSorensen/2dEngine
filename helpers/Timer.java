@@ -9,9 +9,6 @@ import org.lwjgl.glfw.GLFW;
  *https://sourceforge.net/p/java-game-lib/mailman/message/29029484/
  */
 
-//TODO: toString? or print func
-//TODO: FIX TIMER!
-
 public class Timer {
 	
 	public static final float NANOS = 100000000;
@@ -29,7 +26,7 @@ public class Timer {
 	public Timer() {
 		setupTimer();
 	}
-
+	
 	public void setDelta() {
 		double currentTime = getTime();
 		this.delta = (float) (currentTime - lastFrame) * 100000;
@@ -129,6 +126,31 @@ public class Timer {
 		}
 	}
 	
+	@Override
+	public String toString() {
+		String s = "\n  ";
+		s+= "time: "+getTime();
+		s+="\n  ";
+		s+= "lastFrame: "+lastFrame;
+		s+="\n  ";
+		s+="lastTime: "+lastTime;
+		s+="\n  ";
+		s+="overSleep: "+overSleep;
+		s+="\n  ";
+		s+="sleepTime: "+sleepTime;
+		s+="\n  ";
+		s+="t: "+t;
+		s+="\n  ";
+		s+="timerFreq: "+timerFreq;
+		s+="\n  ";
+		s+="yieldTime: "+yieldTime;
+		s+="\n  ";
+		s+="variableYieldTime: "+variableYieldTime;
+		s+="\n  ";
+		s+="Delta: "+delta+".";	
+		return s;
+	}
+
 	/**
 	 * Timer base that ended up not working well
 	 *

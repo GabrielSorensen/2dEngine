@@ -55,6 +55,7 @@ import java.util.TimerTask;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWVidMode;
+import org.lwjgl.glfw.GLFWVidMode.Buffer;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 
@@ -109,7 +110,6 @@ public class Engine2D {
 			if (!glfwInit()) {
 				throw new IllegalStateException("Unable To initialize GLFW..");
 			}
-
 			glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 			glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 			//glfwWindowHint( ,  );
@@ -137,6 +137,8 @@ public class Engine2D {
 			glfwSwapInterval(globals.use_vsync.getValue()); //VSYNC: 0=off, 1=singlebufferedMonitorLocked, 2=DoubleBuffered1/2singleBuffered
 			// Make the window visible
 			glfwShowWindow(globals.WINDOW_HANDLE);
+			
+			//globals.availableVideoModes = GLFW.glfwGetVideoModes(globals.PRIMARY_MONITOR);
 
 		} catch (Exception e) {
 			Logging.logError(e, globals.DEBUG);
@@ -215,6 +217,7 @@ public class Engine2D {
 		setupTimer();
 		Logging.log("Starting Deltas.", globals.DEBUG);
 		globals.delta = globals.timer.getDelta();
+
 		Logging.log("Ready, Entering Loop State.", globals.DEBUG);
 		loop();
 		Logging.log("Window Closed, Cleaning up .", globals.DEBUG);
